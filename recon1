@@ -1,0 +1,92 @@
+
+
+Enumerating ASN and IP blocks
+
+curl -s https://api.bgpview.io/search?query_term=paypal | jq
+
+----
+
+nmap --script targets-asn --script-args targets-asn.asn=<asn>  > cidr.txt
+
+--
+reverse IP lookup
+
+yougetsignal
+viewDNS
+rapiddns
+
+
+---
+
+curl -s 'https://rapiddns.io/sameip/10.10.11.11/24?full=1#result'| grep 'target="' -B1 | egrep -v '(--|)'| rev | cut -c 6-| rev | cut -c 5- | sort -u
+---
+
+reverse ip lookup with multi threadings
+
+github tool: 
+interlace
+
+interlace -tL ip.txt -c "curl -s 'https://rapiddns.io/sameip/_target_?full=1#result' | grep 'target=' -B1 | egrep -v '(--|)' | rev | cut -c 6- | rev | cut -c 5- |  sort -u >> output.txt" -threads 2 --slient --no-color --no-bar
+
+----
+
+Scanning for open ports/services
+
+masscan --open-only 10.10.11.11/24 -p1-65535,U:1-65535 --rate=10000 -http-user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0" -oL "masscanoutput.txt"
+
+----
+
+detecting http services by running httpx
+
+cat output.txt | grep tcp | awk '{print $4,":",$3}' | tr -d ' ' | httpx -title -sc -cl
+
+
+---
+
+nmap -sC -sV ip -T4
+
+---
+subdomains enumeration and brute forcing
+
+dnsvalidator
+
+dnsvalidator -tL https://public-dns.info/nameservers.txt -threads 100 -o resolver.txt
+
+---
+
+shuffleDNS:
+
+shuffledns -d paypal.com -w subdomains-top1million-5000.txt -r resolvers.txt
+
+--
+subbrute
+
+python3 subbrute.py sub-wordlist.txt paypal.com | massdns -r resolvers.txt -o S -w output.txt
+
+--
+gobuster
+--
+
+
+subdomains enum subdomains from content security policy
+
+curl -l -s https://api-s.sandbox.paypal.com | grep -iE 'content-security-policy|CSP' tr " " "\n" | grep "\." | tr -d ";" | sed 's/\*\.//g'| sort -u
+
+
+--
+
+subdomain enum using favicon hash
+
+curl www.exmaple.com/favicon.ico -o fav.ico
+
+convert ico to hash
+
+cat favicon.ico | base64 | python3 -c "import mmh3,sys;print(mmh3.hash(sys.stdin.buffer.read()))"
+
+http.favicon.hash: hash
+
+--
+---
+
+shodan search 'http.favicon.hash:124234234' --fields hostnames | tr ";" "\n" > output.txt
+
